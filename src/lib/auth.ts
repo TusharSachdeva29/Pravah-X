@@ -1,94 +1,58 @@
-import { v4 as uuid } from "uuid";
-import { encode as defaultEncode } from "next-auth/jwt";
-import type { NextAuthOptions } from "next-auth";
-import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter"
+import { NextAuthOptions } from "next-auth"
+import GitHubProvider from "next-auth/providers/github"
+import GoogleProvider from "next-auth/providers/google"
+import { db } from "./db"
 
-import db from "@/lib/db";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import GitHub from "next-auth/providers/github";
-import { schema } from "@/lib/schema";
-
-const adapter = PrismaAdapter(db);
-
-export const authConfig = {
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   providers: [
-    GitHub({
+    GitHubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
     }),
-    Google({
+    GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    Credentials({
-      credentials: {
-        email: {},
-        password: {},
-      },
-      authorize: async (credentials) => {
-        const validatedCredentials = schema.parse(credentials);
-
-        const user = await db.user.findFirst({
-          where: {
-            email: validatedCredentials.email,
-            password: validatedCredentials.password,
-          },
-        });
-
-        if (!user) {
-          throw new Error("Invalid credentials.");
-        }
-
-        return user;
-      },
-    }),
   ],
   callbacks: {
-    async jwt({ token, account }) {
-      if (account?.provider === "credentials") {
-        token.credentials = true;
+    session: ({ session, token }) => {
+      if (session.user && token) {
+        session.user.id = token.id
+        session.user.name = token.name as string
+        session.user.email = token.email as string
+        // session.user.image = token.picture
       }
-      return token;
+      return session
+    },
+    jwt: async ({ token, user }) => {
+      const dbUser = await db.user.findFirst({
+        where: {
+          email: token.email || "",
+        },
+      })
+
+      if (!dbUser) {
+        if (user) {
+          token.id = user.id
+        }
+        return token
+      }
+
+      return {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        picture: dbUser.image,
+      }
     },
   },
-  jwt: {
-    encode: async function (params) {
-      if (params.token?.credentials) {
-        const sessionToken = uuid();
-
-        if (!params.token.sub) {
-          throw new Error("No user ID found in token");
-        }
-
-        const createdSession = await adapter?.createSession?.({
-          sessionToken: sessionToken,
-          userId: params.token.sub,
-          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        });
-
-        if (!createdSession) {
-          throw new Error("Failed to create session");
-        }
-
-        return sessionToken;
-      }
-      return defaultEncode(params);
-    },
+  pages: {
+    signIn: "/sign-in",
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  debug: process.env.NODE_ENV === "development",
   secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: '/sign-in',
-    error: '/auth/error',
-  },
-} satisfies NextAuthOptions;
-const handler = NextAuth(authConfig);
-export const { auth, signIn, signOut } = handler;
-export const { GET, POST } = handler;
+}

@@ -1,73 +1,29 @@
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/lib/auth";
-import { signIn } from "@/lib/auth";
-import { GithubSignIn } from "@/components/github-sign-in";
-import { GoogleSignIn } from "@/components/google-sign-in";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { executeAction } from "@/lib/executeAction";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+"use client"
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
-const Page = async () => {
-  const session = await getServerSession(authConfig);
-  if (session) redirect("/");
+export default function() {
+    const router = useRouter();
 
-  return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-center mb-6">Sign In</h1>
+    return <div>
+        <button onClick={async () => {
+            await signIn("google");
+        }}>Login with google</button>
 
-      <GithubSignIn />
-      <GoogleSignIn />
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with email
-          </span>
-        </div>
-      </div>
-
-      {/* Email/Password Sign In */}
-      <form
-        className="space-y-4"
-        action={async (formData) => {
-          "use server";
-          await executeAction({
-            actionFn: async () => {
-              await signIn("credentials", formData);
-            },
-          });
-        }}
-      >
-        <Input
-          name="email"
-          placeholder="Email"
-          type="email"
-          required
-          autoComplete="email"
-        />
-        <Input
-          name="password"
-          placeholder="Password"
-          type="password"
-          required
-          autoComplete="current-password"
-        />
-        <Button className="w-full" type="submit">
-          Sign In
-        </Button>
-      </form>
-
-      <div className="text-center">
-        <Button asChild variant="link">
-          <Link href="/sign-up">Don&apos;t have an account? Sign up</Link>
-        </Button>
-      </div>
+        <br />
+        <button onClick={async () => {
+            await signIn("github");
+        }}>Login with Github</button>
+        <br />
+        <button onClick={async () => {
+            const res = await signIn("credentials", {
+                username: "",
+                password: "",
+                redirect: false,
+            });
+            console.log(res);
+            router.push("/")
+        }}>Login with email</button>
+        
     </div>
-  );
-};
-
-export default Page;
+}
