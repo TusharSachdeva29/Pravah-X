@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,18 +8,23 @@ import { Label } from "@/components/ui/label";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccess(false);
 
     try {
       const res = await fetch("/api/register", {
@@ -35,18 +39,14 @@ export default function SignUpPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      // Try to sign in after successful registration
-      const signInRes = await signIn("credentials", { 
-        email: formData.email, 
-        password: formData.password, 
-        redirect: false 
-      });
-
-      if (signInRes?.error) {
-        throw new Error("Failed to sign in after registration");
-      }
-
-      router.push("/");
+      // Show success message
+      setSuccess(true);
+      
+      // Redirect to sign-in page after a short delay
+      setTimeout(() => {
+        router.push("/sign-in?registered=true");
+      }, 1500);
+      
     } catch (error: any) {
       console.error("Registration error:", error);
       setError(error.message || "Something went wrong. Please try again.");
@@ -62,6 +62,22 @@ export default function SignUpPage() {
           <h1 className="text-2xl font-semibold">Create an account</h1>
           <p className="text-sm text-muted-foreground">Sign up with a method of your choice</p>
         </div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="mb-4 bg-green-50 dark:bg-green-900/20 border-green-500/50">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-600 dark:text-green-400">
+              Account created successfully! Redirecting to sign in...
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid gap-4">
           <Button variant="outline" type="button" disabled={isLoading} onClick={() => signIn("google")} className="flex items-center gap-2">
@@ -82,28 +98,37 @@ export default function SignUpPage() {
           </div>
 
           <form onSubmit={handleSignUp} className="space-y-4">
-            <Label>Name</Label>
-            <Input 
-              type="text" 
-              placeholder="John Doe" 
-              disabled={isLoading} 
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
-            />
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input 
+                id="name"
+                type="text" 
+                placeholder="John Doe" 
+                disabled={isLoading || success} 
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                required
+              />
+            </div>
 
-            <Label>Email</Label>
-            <Input 
-              type="email" 
-              placeholder="m@example.com" 
-              disabled={isLoading} 
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
-            />
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email"
+                type="email" 
+                placeholder="m@example.com" 
+                disabled={isLoading || success} 
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+                required
+              />
+            </div>
 
             <PasswordInput
               password={formData.password}
               setPassword={(value) => setFormData({ ...formData, password: value })}
+              disabled={isLoading || success}
             />
 
-            <Button type="submit" disabled={isLoading} className="w-full">
+            <Button type="submit" disabled={isLoading || success} className="w-full">
               {isLoading ? "Creating account..." : "Sign up"}
             </Button>
           </form>

@@ -1,11 +1,13 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Code2, Brain, Bot, Calendar, ChevronRight, Github, Terminal, Rocket, Timer, Award, Zap } from 'lucide-react';
-import { ThemeToggle } from "../components/theme-toggle";
-import FeatureCard from "../components/FeatureCard";
+import DayNightToggleButton from "@/components/ui/dark-mode-button";
+import FeatureCard from "@/components/FeatureCard";
+import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 const jokes = [
   "Why did the competitive programmer go broke? Because they used up all their cache! 💸",
@@ -137,14 +139,26 @@ const streakMessages = [
   "The best way to get better is to never stop! 🎯 Keep your streak alive and see the magic happen."
 ];
 
-
-
-
 function App() {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [jokeIndex, setJokeIndex] = useState(0);
   const [streak, setStreak] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
+  const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Initialize dark mode state based on theme
+  useEffect(() => {
+    setIsDarkMode(theme === 'dark');
+  }, [theme]);
+
+  // Toggle dark mode handler
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    setTheme(newDarkMode ? 'dark' : 'light');
+  };
 
   const rotateJokes = () => {
     setJokeIndex((prev) => (prev + 1) % jokes.length);
@@ -158,6 +172,10 @@ function App() {
     setStreak((prev) => (prev + 1) % streakMessages.length);
   }
 
+  const handleGetStarted = () => {
+    router.push("/sign-up");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary transition-colors duration-300">
       
@@ -166,7 +184,11 @@ function App() {
         <p className="text-sm font-mono typing-effect">{jokes[jokeIndex]}</p>
         <p className="text-xs text-muted-foreground mt-1">Click for more programming humor! We've got 99+ jokes, but a bug ain't one! 😉</p>
       </div>
-      <ThemeToggle />
+      
+      {/* Sticky dark mode toggle button */}
+      <div className="fixed top-4 right-4 z-50 shadow-md rounded-full">
+        <DayNightToggleButton dark={isDarkMode} setDark={toggleDarkMode} />
+      </div>
       
       {/* Hero Section */}
       <header className="container mx-auto px-4 py-16 flex flex-col items-center text-center gap-6">
@@ -196,7 +218,7 @@ function App() {
         
         
         <div className="flex gap-4 mt-4 animate-slide-in [animation-delay:400ms]">
-          <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90 group">
+          <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90 group" onClick={handleGetStarted}>
             Get Started <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Button>
           <Button size="lg" variant="outline" className="gap-2 group" 
@@ -332,7 +354,7 @@ function App() {
             <br />
             <span className="text-sm mt-2 block">Future you will thank present you for clicking that button below.</span>
           </p>
-          <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90 animate-float group">
+          <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90 animate-float group" onClick={handleGetStarted}>
             Start Your Journey <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Button>
         </Card>

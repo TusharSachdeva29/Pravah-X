@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn, useSession, getSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,20 +10,43 @@ import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import Link from "next/link";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { data: session, status } = useSession(); // Get session status
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // Redirect to  if already signed in
+  // Check for params in URL
+  useEffect(() => {
+    // Handle error param
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      if (errorParam === "OAuthAccountNotLinked") {
+        setError("This email is already associated with a different sign-in method.");
+      } else {
+        setError(`Authentication error: ${errorParam}`);
+      }
+    }
+
+    // Handle registered=true param
+    const registered = searchParams.get("registered");
+    if (registered === "true") {
+      setSuccessMessage("Account created successfully! Please sign in.");
+    }
+  }, [searchParams]);
+
+  // Redirect to profile if already signed in
   useEffect(() => {
     if (status === "authenticated") {
-      router.push("/");
+      router.push(`/profile/${session?.user?.name}`);
     }
-  }, [status, router]);
+  }, [status, router, session?.user?.name]);
 
   const handleSignIn = async (provider: "google" | "github" | "credentials") => {
     setIsLoading(true);
@@ -37,17 +60,29 @@ export default function SignInPage() {
           return;
         }
 
-        const res = await signIn("credentials", { ...formData, redirect: false });
+        const res = await signIn("credentials", {
+          ...formData,
+          redirect: false,
+        });
 
         if (res?.error) {
           setError("Invalid email or password.");
-          setIsLoading(false);
           return;
         }
 
-        router.push("/"); // Redirect to 
+        // Wait for session to be available
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const session = await getSession();
+
+        if (session?.user?.name) {
+          router.refresh(); // Refresh the current route
+          router.push(`/profile/${session.user.name}`);
+        }
       } else {
-        await signIn(provider, { callbackUrl: "/" }); // Ensure correct callback URL
+        // Use signIn with callbackUrl but handle errors properly
+        await signIn(provider, {
+          callbackUrl: `/profile/redirect`,
+        });
       }
     } catch (error) {
       console.error("Sign-in error:", error);
@@ -64,6 +99,22 @@ export default function SignInPage() {
           <h1 className="text-2xl font-semibold">Sign In</h1>
           <p className="text-sm text-muted-foreground">Welcome back! Please sign in</p>
         </div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert className="mb-4 bg-green-50 dark:bg-green-900/20 border-green-500/50">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-600 dark:text-green-400">
+              {successMessage}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid gap-4">
           <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleSignIn("google")} className="flex items-center gap-2">
@@ -107,8 +158,6 @@ export default function SignInPage() {
               password={formData.password}
               setPassword={(value) => setFormData({ ...formData, password: value })}
             />
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? "Signing in..." : "Sign in"}

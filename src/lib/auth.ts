@@ -50,9 +50,13 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/sign-in",
+    error: "/auth-error", // Create this page to handle errors
   },
+  // Allow linking multiple providers to one account
   session: {
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // Add this to allow account linking
+  allowDangerousEmailAccountLinking: true,
 }
