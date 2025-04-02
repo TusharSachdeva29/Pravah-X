@@ -13,7 +13,7 @@ export default function RedirectPage() {
     if (status === "loading") return;
 
     if (status === "authenticated" && session?.user?.name) {
-      router.push(`/profile/${session.user.name}`);
+      router.push(`/profile`);
     } else {
       router.push("/sign-in");
     }
