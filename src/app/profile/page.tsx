@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DayNightToggleButton from "@/components/ui/dark-mode-button";
@@ -18,7 +18,6 @@ import {
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { name } = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const { theme, setTheme } = useTheme();
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -62,8 +61,9 @@ export default function ProfilePage() {
       if (data.status === "OK") {
         localStorage.setItem("cfHandle", handle);
         setError("");
-        // Open new tab with the profile URL
-        window.open(`/profile/${handle}`, "_blank");
+
+        // Navigate to the profile page instead of opening in new tab
+        router.push(`/profile/${handle}`);
       } else {
         setError(data.comment || "Invalid handle");
       }
