@@ -186,7 +186,7 @@ function App() {
       </div>
       
       {/* Sticky dark mode toggle button */}
-      <div className="fixed top-4 right-4 z-50 shadow-md rounded-full">
+      <div className="fixed top-2 right-4 z-50 shadow-md rounded-full">
         <DayNightToggleButton dark={isDarkMode} setDark={toggleDarkMode} />
       </div>
       

@@ -34,6 +34,8 @@ export default function Dashboard({ params }: { params: { name: string } }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const rating = 0;
+
   useEffect(() => {
     setMounted(true);
     setIsDarkMode(theme === "dark");
@@ -59,15 +61,21 @@ export default function Dashboard({ params }: { params: { name: string } }) {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
-            <Button variant="ghost" size="sm" asChild>
+          <div className="hidden md:flex items-center space-x-2 mr-10">
+            <Button variant="ghost" size="sm" asChild
+            
+            className = "translate-x-[-5px]">
               <Link href="/explore">Explore</Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild
+            className = "translate-x-[-15px]"
+            >
               <Link href="/community">Community</Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/problem-of-the-day">Problem of the Day</Link>
+            <Button variant="ghost" size="sm" asChild
+            className = "translate-x-[-25px]"
+            >
+              <Link href="/profile/potd/rating">Problem of the Day</Link>
             </Button>
 
             {/* Dark mode toggle button - desktop */}
@@ -127,14 +135,11 @@ export default function Dashboard({ params }: { params: { name: string } }) {
               className="w-full justify-start"
               asChild
             >
-              <Link href="/problem-of-the-day">Problem of the Day</Link>
+              <Link href="/profile/potd/rating">Problem of the Day</Link>
             </Button>
           </div>
         )}
       </nav>
-
-      
-
     </div>
   );
 }
