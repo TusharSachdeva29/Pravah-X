@@ -20,6 +20,9 @@ import type {
 } from "@/lib/codeforces-api";
 import { UserStats } from "@/components/dashboard/user-stats";
 import { UpcomingContests } from "@/components/dashboard/upcoming-contests";
+import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalLink } from "lucide-react";
 
 export default function Dashboard({ params }: { params: { name: string } }) {
   const unwrappedParams = use(params);
@@ -199,6 +202,107 @@ export default function Dashboard({ params }: { params: { name: string } }) {
         <div className="bg-card rounded-lg shadow-md p-6">
           <h2 className="text-xl font-bold mb-4">Upcoming Contests</h2>
           <UpcomingContests contests={contests} loading={loading} />
+        </div>
+
+        {/* Activity Heatmap */}
+        <div className="md:col-span-2 bg-card rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-bold mb-4">Activity</h2>
+          {loading ? (
+            <div className="animate-pulse h-40 bg-muted rounded-md"></div>
+          ) : error ? (
+            <div className="text-destructive">Failed to load activity data</div>
+          ) : (
+            <ActivityHeatmap submissions={submissions} />
+          )}
+        </div>
+
+        {/* Recent Submissions */}
+        <div className="bg-card rounded-lg shadow-md p-6">
+          <Card className="border-0 shadow-none">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-xl font-bold">
+                Recent Submissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              {loading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="animate-pulse h-12 bg-muted rounded-md"
+                    ></div>
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="text-destructive">
+                  Failed to load submissions
+                </div>
+              ) : submissions.length === 0 ? (
+                <div className="text-muted-foreground">
+                  No recent submissions found
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {submissions.slice(0, 5).map((submission, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start justify-between p-3 rounded-md hover:bg-muted transition-colors"
+                    >
+                      <div>
+                        <div className="font-medium line-clamp-1">
+                          {submission.problem.name}
+                        </div>
+                        <div className="text-xs flex gap-2 text-muted-foreground">
+                          <span>
+                            {new Date(
+                              submission.creationTimeSeconds * 1000
+                            ).toLocaleDateString()}
+                          </span>
+                          <span
+                            className={
+                              submission.verdict === "OK"
+                                ? "text-green-500 dark:text-green-400"
+                                : "text-red-500 dark:text-red-400"
+                            }
+                          >
+                            {submission.verdict === "OK"
+                              ? "Accepted"
+                              : submission.verdict || "Unknown"}
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href={`https://codeforces.com/contest/${submission.contestId}/submission/${submission.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                    </div>
+                  ))}
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      asChild
+                    >
+                      <a
+                        href={`https://codeforces.com/submissions/${unwrappedParams.name}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View All Submissions{" "}
+                        <ExternalLink size={14} className="ml-1" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
